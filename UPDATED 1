@@ -1,0 +1,69 @@
+import cv2
+import datetime
+import time
+
+def main():
+    cap = cv2.VideoCapture(0)  # Open default camera (usually webcam)
+
+    # Create a window with a menu bar for camera settings
+    cv2.namedWindow("Camera")
+    cv2.createTrackbar('Mode', 'Camera', 0, 1, lambda x: None)  # 0 for color, 1 for grayscale
+    cv2.createTrackbar('Brightness', 'Camera', 100, 200, lambda x: None)
+    cv2.createTrackbar('Contrast', 'Camera', 100, 200, lambda x: None)
+    cv2.createTrackbar('Saturation', 'Camera', 100, 200, lambda x: None)
+
+    while True:
+        ret, frame = cap.read()  # Read frame from camera
+
+        # Get camera settings from the menu bar
+        mode = cv2.getTrackbarPos('Mode', 'Camera')
+        brightness = cv2.getTrackbarPos('Brightness', 'Camera') / 100.0
+        contrast = cv2.getTrackbarPos('Contrast', 'Camera') / 100.0
+        saturation = cv2.getTrackbarPos('Saturation', 'Camera') / 100.0
+
+        # Apply camera settings
+        frame = adjust_camera_settings(frame, mode, brightness, contrast, saturation)
+
+        # Display the current frame
+        cv2.imshow("Camera", frame)
+
+        key = cv2.waitKey(1)
+        if key == ord('q'):  # Press 'q' to quit
+            break
+        elif key == ord('s'):  # Press 's' to snap photo
+            countdown_and_snap(frame)
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+def adjust_camera_settings(frame, mode, brightness, contrast, saturation):
+    # Convert to grayscale if mode is set to 1
+    if mode == 1:
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Adjust brightness, contrast, and saturation
+    frame = cv2.convertScaleAbs(frame, alpha=contrast, beta=brightness)
+    frame = cv2.addWeighted(frame, saturation, frame, 0, 0)
+
+    return frame
+
+def countdown_and_snap(frame):
+    # Countdown timer for 3 seconds
+    for i in range(3, 0, -1):
+        # Display countdown on the frame
+        cv2.putText(frame, str(i), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2)
+        cv2.imshow("Camera", frame)
+        cv2.waitKey(1000)  # Wait for 1 second
+
+    # Get current date and time
+    current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Add date and time stamp to the frame
+    cv2.putText(frame, current_datetime, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+    # Display the frame with the date and time stamp
+    cv2.imshow("Snap", frame)
+    cv2.waitKey(0)
+
+if __name__ == "__main__":
+    main()
